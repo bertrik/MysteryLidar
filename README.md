@@ -25,7 +25,7 @@ pip3 install -r requirements.txt
 To run the application:
 * if not done already, activate the venv:
 ```
-python3 -m venv .venv
+source .venv/bin/activate
 ```
 * run the application:
 ```
