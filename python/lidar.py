@@ -55,25 +55,29 @@ class FrameExtractor:
         return self.data
 
 
-last_angle = 0.0
-
-
-def process_data(renderer, data):
-    global last_angle
+def dump_hex(data):
     ts = time.time()
     line = f"{ts:10.3f}:"
-
     for b in data:
         item = f' {b:02x}'
         line = line + item
-
     fsa = (data[6] + (data[7] << 8)) / 64.0 - 640
     lsa = (data[56] + (data[57] << 8)) / 64.0 - 640
     print(f"{line} = {fsa:6.2f}...{lsa:6.2f}")
 
+
+last_angle = 0.0
+
+
+def draw_plot(renderer, data):
+    global last_angle
+
+    fsa = (data[6] + (data[7] << 8)) / 64.0 - 640
+    lsa = (data[56] + (data[57] << 8)) / 64.0 - 640
     angle = fsa
-    step = (lsa - fsa) / 16 if angle >= 0.0 else (360 + lsa - fsa) / 16
-    line = ""
+    if lsa < fsa:
+        lsa = lsa + 360
+    step = (lsa - fsa) / 16
 
     # clear if we started a new rotation
     if angle < last_angle:
@@ -84,13 +88,13 @@ def process_data(renderer, data):
     points = []
     idx = 8
     for i in range(16):
-        v = (data[idx] + (data[idx + 1] << 8)) & 0xFFF
-        idx = idx + 3
-        angle = angle + step
-        line = line + f" {v:05d}"
-
         radians = math.radians(angle)
-        distance = v / 10
+        angle = angle + step
+
+        v = (data[idx] + (data[idx + 1] << 8)) & 0x3FFF
+        idx = idx + 3
+        distance = v / 12
+
         x = 400 + math.sin(radians) * distance
         y = 400 - math.cos(radians) * distance
         points.append((x, y))
@@ -103,13 +107,15 @@ def main():
     window.show()
     renderer = sdl2.ext.Renderer(window)
 
-    frame_extractor = FrameExtractor()
     with serial.Serial("/dev/ttyUSB0", 230400, timeout=1) as ser:
+        frame_extractor = FrameExtractor()
         while True:
             data = ser.read(size=16)
             for b in data:
                 if frame_extractor.process(b):
-                    process_data(renderer, frame_extractor.get_data())
+                    frame_data = frame_extractor.get_data()
+                    dump_hex(frame_data)
+                    draw_plot(renderer, frame_data)
 
 
 if __name__ == "__main__":
