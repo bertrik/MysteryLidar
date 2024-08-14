@@ -1,7 +1,9 @@
 # MysteryLidar
 Investigation of an inexpensive Lidar bought off Aliexpress
 
-See https://revspace.nl/MysteryLidar
+![example](images/polar.png)
+
+See also https://revspace.nl/MysteryLidar
 
 # Preparation
 To prepare running the test application:
