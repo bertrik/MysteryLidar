@@ -6,6 +6,7 @@ from enum import Enum
 import sdl2
 import sdl2.ext
 import serial
+import argparse
 
 
 class FrameExtractor:
@@ -102,19 +103,25 @@ def draw_plot(renderer, data):
 
 
 def main():
+    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument("-d", "--device", help="Serial port", default="/dev/ttyUSB0")
+    parser.add_argument("-D", "--debug", help="Show raw serial frames", action="store_true")
+    args = parser.parse_args()
+
     sdl2.ext.init()
     window = sdl2.ext.Window("LIDAR", size=(800, 800))
     window.show()
     renderer = sdl2.ext.Renderer(window)
 
-    with serial.Serial("/dev/ttyUSB0", 230400, timeout=1) as ser:
+    with serial.Serial(args.device, 230400, timeout=1) as ser:
         frame_extractor = FrameExtractor()
         while True:
             data = ser.read(size=16)
             for b in data:
                 if frame_extractor.process(b):
                     frame_data = frame_extractor.get_data()
-                    dump_hex(frame_data)
+                    if args.debug:
+                        dump_hex(frame_data)
                     draw_plot(renderer, frame_data)
 
 
